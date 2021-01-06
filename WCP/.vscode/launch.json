@@ -1,0 +1,22 @@
+{
+	"version": "0.2.0",
+	"configurations": [ 
+		{
+			"name": "chrome调试",
+			"type": "chrome",
+			"request": "launch",
+			"file": "${workspaceRoot}/bin/index.html",
+			// "url": "http://localhost:8800/bin/index.html",
+			"runtimeArgs": [
+				"--allow-file-access-from-files",
+				"--disable-web-security"
+			],
+			"sourceMaps": true,
+			"webRoot": "${workspaceRoot}",
+			"userDataDir": "${workspaceRoot}/.laya/chrome",
+			"sourceMapPathOverrides": {
+				"src/*": "${workspaceRoot}/src/*"
+			}		
+		}
+	]
+}
