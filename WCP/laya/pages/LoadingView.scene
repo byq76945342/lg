@@ -2,10 +2,11 @@
     "x":0,
     "type":"View",
     "selectedBox":2,
+    "selecteID":10,
     "searchKey":"View",
     "props":{"width":750,"top":0,"sceneColor":"#000000","height":1334,"centerX":0,"bottom":0},
     "nodeParent":-1,
-    "maxID":5,
+    "maxID":11,
     "label":"View",
     "isOpen":true,
     "isDirectory":true,
@@ -23,7 +24,7 @@
             "isDirectory":false,
             "isAniNode":true,
             "hasChild":false,
-            "compId":3,
+            "compId":10,
             "child":[
                 ]
         },
@@ -31,13 +32,29 @@
             "x":15,
             "type":"Image",
             "searchKey":"Image",
-            "props":{"skin":"comp/image.png","centerY":0,"centerX":0},
+            "props":{"top":0,"right":0,"left":0,"bottom":0},
             "nodeParent":2,
             "label":"Image",
+            "isOpen":true,
             "isDirectory":false,
             "isAniNode":true,
             "hasChild":false,
-            "compId":4,
+            "compId":7,
+            "child":[
+                ]
+        },
+        {
+            "x":15,
+            "type":"UIView",
+            "source":"BottomView.scene",
+            "searchKey":"UIView",
+            "props":{"y":511,"x":119},
+            "nodeParent":2,
+            "label":"UIView",
+            "isDirectory":false,
+            "isAniNode":true,
+            "hasChild":false,
+            "compId":6,
             "child":[
                 ]
         }],
