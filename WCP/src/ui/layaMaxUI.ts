@@ -3,3 +3,22 @@ import View=Laya.View;
 import Dialog=Laya.Dialog;
 import Scene=Laya.Scene;
 var REG: Function = Laya.ClassUtils.regClass;
+export module ui {
+    export class BottomViewUI extends View {
+        public static  uiView:any ={"type":"View","props":{"y":0,"width":512,"runtime":"uiExt/BottomViewExt.ts","height":313,"centerY":0,"centerX":0},"compId":2,"child":[{"type":"Image","props":{"y":0,"x":0,"skin":"comp/image.png"},"compId":12}],"loadList":["comp/image.png"],"loadList3D":[]};
+        constructor(){ super()}
+        createChildren():void {
+            super.createChildren();
+            this.createView(BottomViewUI.uiView);
+        }
+    }
+    REG("ui.BottomViewUI",BottomViewUI);
+    export class LoadingViewUI extends View {
+        constructor(){ super()}
+        createChildren():void {
+            super.createChildren();
+            this.loadScene("LoadingView");
+        }
+    }
+    REG("ui.LoadingViewUI",LoadingViewUI);
+}
