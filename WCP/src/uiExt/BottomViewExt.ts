@@ -9,7 +9,8 @@ export default class BottomViewExt extends ui.BottomViewUI {
     }
     private closeThis() {
         UIMgr.ins.closeView(`LoadingView`);
-        GameMgr.ins.gameStar();
+        UIMgr.ins.openView(`GameView`);
+        // GameMgr.ins.gameStar();
     }
 
 }
