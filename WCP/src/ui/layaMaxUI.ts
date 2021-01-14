@@ -13,6 +13,14 @@ export module ui {
         }
     }
     REG("ui.BottomViewUI",BottomViewUI);
+    export class GameViewUI extends View {
+        constructor(){ super()}
+        createChildren():void {
+            super.createChildren();
+            this.loadScene("GameView");
+        }
+    }
+    REG("ui.GameViewUI",GameViewUI);
     export class LoadingViewUI extends View {
         constructor(){ super()}
         createChildren():void {

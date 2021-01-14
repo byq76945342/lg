@@ -3,6 +3,8 @@ export default class MonsterPlan extends Laya.Image {
         super();
         this.pos(Math.random() * Laya.stage.width, -100);
         this.graphics.drawRect(0, 0, 100, 100, `#000fff`);
+        this.height = 100;
+        this.width = 100;
     }
 
     public get onView(): boolean {
@@ -13,7 +15,7 @@ export default class MonsterPlan extends Laya.Image {
     }
     public addTo() {
         Laya.stage.addChild(this);
-        this.y=-100;
+        this.y = -100;
     }
 
 }

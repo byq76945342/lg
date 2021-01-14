@@ -18,7 +18,7 @@ class Main {
 		else Laya.init(GameConfig.width, GameConfig.height, Laya["WebGL"]);
 		Laya["Physics"] && Laya["Physics"].enable();
 		// Laya.enableDebugPanel();
-		Laya.Stat.show();
+		// Laya.Stat.show();
 		Laya.stage.scaleMode = isFullScreen ? Laya.Stage.SCALE_FIXED_WIDTH : Laya.Stage.SCALE_FIXED_AUTO;
 		// Laya.stage.scaleMode=Laya.Stage.SCALE_FIXED_AUTO;
 		Laya.stage.screenMode = GameConfig.screenMode;
