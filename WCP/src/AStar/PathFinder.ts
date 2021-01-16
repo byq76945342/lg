@@ -49,8 +49,9 @@ export default class PathFinder {
         return false;
     }
     public findPath(startX: number, startY: number, endX: number, endY: number): Laya.Point[] {
+
         let path: Laya.Point[] = [];
-        let resultNode: PathNode = this.SearchPath(startX, startX, endX, endY);
+        let resultNode: PathNode = this.SearchPath(startX, startY, endX, endY);
         while (resultNode) {
             let point: Laya.Point = new Laya.Point();
             point.x = resultNode.x;

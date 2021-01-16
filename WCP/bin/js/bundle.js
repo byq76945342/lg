@@ -148,7 +148,7 @@
         }
         findPath(startX, startY, endX, endY) {
             let path = [];
-            let resultNode = this.SearchPath(startX, startX, endX, endY);
+            let resultNode = this.SearchPath(startX, startY, endX, endY);
             while (resultNode) {
                 let point = new Laya.Point();
                 point.x = resultNode.x;
@@ -331,12 +331,9 @@
             super();
             this.heroNode = new Laya.Sprite();
             this.m_movePath = [];
-            this.m_tilePos = new Laya.Point();
-            this.m_destPixelPosX = 0;
-            this.m_destPixelPosY = 0;
             this.heroNode.graphics.drawRect(0, 0, 50, 50, `#ff9999`);
             this.addChild(this.heroNode);
-            Laya.timer.frameLoop(100, this, this.selfFrame);
+            Laya.timer.frameLoop(1, this, this.selfFrame);
         }
         StartActiveMove(x, y) {
             let startX = 0;
@@ -344,51 +341,36 @@
             let path;
             this.m_movePath = [];
             if (!this.m_movePath.length) {
-                startX = this.m_tilePos.x;
-                startY = this.m_tilePos.y;
+                startX = this.getPixX() / 125;
+                startY = this.getPixY() / 125;
+                startX = startX | 0;
+                startY = startY | 0;
                 path = GameViewExt.m_pathFinder.findPath(startX, startY, x, y);
-                if (!path || !path.length)
-                    return;
                 this.m_movePath = path;
+                this.m_destNodeIndex = 0;
             }
         }
         selfFrame() {
-            let detalTime = Laya.timer.delta;
-            if (!this.m_movePath.length)
-                return;
-            if (this.m_destNodeIndex == null) {
-                this.m_destNodeIndex = 0;
-                this.m_destPixelPosX = this.m_movePath[this.m_destNodeIndex].x * 125;
-                this.m_destPixelPosY = this.m_movePath[this.m_destNodeIndex].y * 125;
-                let moveLength = 20 * detalTime * 125;
-                let moveDir = new Laya.Point(this.m_destPixelPosX - this.x, this.m_destPixelPosY - this.y);
-                let destDistance = moveDir.distance(0, 0);
-                while (moveLength >= destDistance) {
-                    this.setPixelPosition(this.m_destPixelPosX, this.m_destPixelPosY);
+            if (this.m_destNodeIndex != null) {
+                if (this.m_movePath[this.m_destNodeIndex]) {
+                    this.setPixelPosition(this.m_movePath[this.m_destNodeIndex].x * 125, this.m_movePath[this.m_destNodeIndex].y * 125);
                     this.m_destNodeIndex += 1;
-                    if (this.m_destNodeIndex >= this.m_movePath.length) {
-                        this.m_destNodeIndex = null;
-                        return;
-                    }
-                    this.m_destPixelPosX = this.m_movePath[this.m_destNodeIndex].x * 125;
-                    this.m_destPixelPosY = this.m_movePath[this.m_destNodeIndex].y * 125;
-                    moveLength -= destDistance;
-                    destDistance = moveDir.distance(0, 0);
                 }
-                moveDir.normalize();
-                let cosAngle = moveDir.x;
-                let sinAngle = moveDir.y;
-                moveDir.x = moveLength * cosAngle;
-                moveDir.y = moveLength * sinAngle;
-                let px = this.x + moveDir.x;
-                let py = this.y + moveDir.y;
-                this.setPixelPosition(px, py);
+                else {
+                    this.m_destNodeIndex = null;
+                }
             }
         }
         setPixelPosition(x, y) {
             this.x = x;
             this.y = y;
             this.updatePos();
+        }
+        getPixX() {
+            return this.x;
+        }
+        getPixY() {
+            return this.y;
         }
     }
 
@@ -399,16 +381,16 @@
             this.createTileMap();
         }
         createTileMap() {
-            this.map = new Laya.TiledMap();
-            let viewReg = new Laya.Rectangle(0, 0, this.width, this.height);
-            this.map.createMap("map/mainmap.json", viewReg, new Laya.Handler(this, this.onCreateComplete));
+            GameViewExt.map = new Laya.TiledMap();
+            let viewReg = new Laya.Rectangle(0, 0, 125 * 20, 125 * 20);
+            GameViewExt.map.createMap("map/mainmap.json", viewReg, new Laya.Handler(this, this.onCreateComplete));
         }
         onCreateComplete() {
             this.createHero();
             this.initFinder();
         }
         createHero() {
-            this.touckLayer = this.map.getLayerByName("build");
+            this.touckLayer = GameViewExt.map.getLayerByName("build");
             this.hero = new HeroNode();
             this.touckLayer.addChild(this.hero);
             Laya.stage.on(Laya.Event.CLICK, this, this.clickMap);
@@ -423,11 +405,11 @@
             }
         }
         initFinder() {
-            let mapGridW = this.map.numColumnsTile;
-            let mapGridH = this.map.numRowsTile;
+            let mapGridW = GameViewExt.map.numColumnsTile;
+            let mapGridH = GameViewExt.map.numRowsTile;
             GameViewExt.m_pathFinder = new PathFinder(mapGridW, mapGridH);
             GameViewExt.m_pathFinder.isIgnoreCorner = false;
-            let blockLayer = this.map.getLayerByName(`block`);
+            let blockLayer = GameViewExt.map.getLayerByName(`block`);
             for (let i = 0; i < mapGridW; ++i) {
                 for (let j = 0; j < mapGridH; ++j) {
                     GameViewExt.m_pathFinder.setStaticBlock(i, j, blockLayer.getTileData(i, j));
