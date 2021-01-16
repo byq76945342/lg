@@ -63,8 +63,8 @@ export default class GameMgr {
         let tarY: number = 0;
         let offH: number = 0;
 
-        let wy: number = this.self.weaponX();
-        let wx: number = this.self.weaponY();
+        let wy: number = this.self.weaponY();
+        let wx: number = this.self.weaponX();
         let ww: number = this.self.weaponW();
         let wh: number = this.self.weaponH();
         for (let m of this.runingMonster) {
@@ -72,21 +72,19 @@ export default class GameMgr {
             let my: number = m.y;
             let mw: number = m.width;
             let mh: number = m.height;
-            if (tarY < my) {
-                if (my + mh < wy || my > wy + wh) {
-                    m.gray = false;
-                    continue;
-                }
-                if (mx + mw < wx || mx > wx + ww) {//宽度检测
-                    m.gray = false;
-                    continue;
-                }
-                tarY = my;//碰到的y坐标
-                offH = m.height;
-                m.gray = true;
-            } else {
+
+            if (my + mh < wy || my > wy + wh) {
                 m.gray = false;
+                continue;
             }
+            if (mx + mw < wx || mx > wx + ww) {//宽度检测
+                m.gray = false;
+                continue;
+            }
+            tarY = my;//碰到的y坐标
+            offH = m.height;
+            m.gray = true;
+            break;
 
         }
         console.log(tarY);
