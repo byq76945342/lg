@@ -33,7 +33,7 @@ export default class SelfPlan extends Laya.Image implements PlanImp {
         this.y = Laya.stage.mouseY - (this.height >> 1);
     }
     renderTary(y: number) {
-        let toChild: number = this.weapon.height - (this.y - y);
+        let toChild: number = y - this.y;
         this.weapon.renderTary(toChild);
     }
     public weaponY() {

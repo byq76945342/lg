@@ -1,3 +1,4 @@
+import PathFinder from "../AStar/PathFinder";
 import HeroNode from "../Map/MapNode/HeroNode";
 import { ui } from "../ui/layaMaxUI";
 
@@ -6,6 +7,7 @@ export default class GameViewExt extends ui.GameViewUI {
     private touckPoint: Laya.Point = new Laya.Point();
     private touckLayer: Laya.MapLayer;
     private hero: HeroNode;
+    public static m_pathFinder: PathFinder;
     constructor() {
         super();
         this.createTileMap();
@@ -19,11 +21,10 @@ export default class GameViewExt extends ui.GameViewUI {
     private onCreateComplete() {
 
         this.createHero();
+        this.initFinder();
 
     }
-    private movePort() {
-        this.map.moveViewPort(100, 100);
-    }
+
     private createHero() {
         this.touckLayer = this.map.getLayerByName("build");
         this.hero = new HeroNode();
@@ -31,9 +32,27 @@ export default class GameViewExt extends ui.GameViewUI {
         Laya.stage.on(Laya.Event.CLICK, this, this.clickMap);
     }
     private clickMap(e: Laya.Event) {
-        Laya.Tween.clearAll(this.hero);
         this.touckLayer.getTilePositionByScreenPos(e.stageX, e.stageY, this.touckPoint);
-        Laya.Tween.to(this.hero, { x: this.touckPoint.x*125, y: this.touckPoint.y*125 }, 2000);
+        let tileX: number = this.touckPoint.x|0;
+        let tileY: number = this.touckPoint.y|0;
+        //點擊到了可行走的地點
+        let touckWalkable: boolean = GameViewExt.m_pathFinder.isWalkable(tileX, tileY);
+        if (touckWalkable) {
+            this.hero.StartActiveMove(tileX, tileY);
+        }
+    }
+    private initFinder() {
+        let mapGridW: number = this.map.numColumnsTile;
+        let mapGridH: number = this.map.numRowsTile;
 
+        GameViewExt.m_pathFinder = new PathFinder(mapGridW, mapGridH);//初始化尋路模塊
+        GameViewExt.m_pathFinder.isIgnoreCorner = false;
+        //設置靜態的阻擋
+        let blockLayer: Laya.MapLayer = this.map.getLayerByName(`block`);
+        for (let i: number = 0; i < mapGridW; ++i) {
+            for (let j: number = 0; j < mapGridH; ++j) {
+                GameViewExt.m_pathFinder.setStaticBlock(i, j, blockLayer.getTileData(i, j));
+            }
+        }
     }
 }
