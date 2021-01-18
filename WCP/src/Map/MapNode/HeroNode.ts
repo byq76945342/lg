@@ -1,4 +1,6 @@
 import GameViewExt from "../../uiExt/GameViewExt";
+import TMap from "../mapFile/TMap";
+import MapMgr from "../MapMgr";
 
 export default class HeroNode extends Laya.GridSprite {
     private heroNode: Laya.Sprite = new Laya.Sprite();
@@ -6,9 +8,12 @@ export default class HeroNode extends Laya.GridSprite {
     private m_destNodeIndex: number;//当前移动的序列号
     constructor() {
         super();
-        this.heroNode.graphics.drawRect(0, 0, 50, 50, `#ff9999`);
+        this.heroNode.graphics.drawRect(0, 0, 125, 125, `#ff9999`);
         this.addChild(this.heroNode);
         Laya.timer.frameLoop(1, this, this.selfFrame);
+    }
+    initData(map: Laya.TiledMap) {
+        super.initData(map);
     }
     StartActiveMove(x: number, y: number) {
         //嘗試讓主角尋路
@@ -21,7 +26,7 @@ export default class HeroNode extends Laya.GridSprite {
             startY = this.getPixY() / 125;
             startX = startX | 0;
             startY = startY | 0;
-            path = GameViewExt.m_pathFinder.findPath(startX, startY, x, y);
+            path = MapMgr.ins.pathFinder.findPath(startX, startY, x, y);
             this.m_movePath = path;
             this.m_destNodeIndex = 0;
         }
@@ -37,31 +42,43 @@ export default class HeroNode extends Laya.GridSprite {
             }
 
         }
-
-
     }
     private setPixelPosition(x: number, y: number) {
         this.relativeX = x;
         this.relativeY = y;
-        
-        let cx: number = x - (GameViewExt.map.viewPortWidth >> 1);
-        let cy: number = y - (GameViewExt.map.viewPortHeight >> 1);
-        
+        let map: Laya.TiledMap = MapMgr.ins.map;
+
+        let cx: number = x - (map.viewPortWidth >> 1);
+        let cy: number = y - (map.viewPortHeight >> 1);
+
         cx < 0 && (cx = 0);
-        let maxX: number = GameViewExt.map.width - GameViewExt.map.viewPortWidth
+        let maxX: number = map.width - map.viewPortWidth
         cx > maxX && (cx = maxX);
 
         cy < 0 && (cy = 0);
-        let maxY: number = GameViewExt.map.height - GameViewExt.map.viewPortHeight;
+        let maxY: number = map.height - map.viewPortHeight;
         cy > maxY && (cy = maxY);
-        GameViewExt.map.moveViewPort(cx, cy);
+        this.moveMapViewPort(cx, cy);
         this.updatePos();
+    }
+    protected moveMapViewPort(x: number, y: number) {
+        MapMgr.ins.updateViewPort(x, y);
+    }
+    public updatePos() {
+        super.updatePos();
     }
     private getPixX(): number {
         return this.relativeX;
     }
     private getPixY(): number {
         return this.relativeY;
+    }
+    public destroy() {
+        this.heroNode.removeSelf();
+        this.heroNode.destroy();
+        this.heroNode = null;
+        this.removeSelf();
+        super.destroy();
     }
 
 
