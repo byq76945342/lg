@@ -324,6 +324,120 @@
         CalcF(cur) {
             return cur.G + cur.H;
         }
+        destroy() { }
+    }
+
+    class TMap {
+        constructor() {
+            this.mapName = "";
+            this.scale = 1;
+            this.touchPoint = new Laya.Point;
+        }
+        createMapByName(mName) {
+            this.mapName = mName;
+            this._map = new Laya.TiledMap();
+            let regW = Laya.stage.width;
+            let regH = Laya.stage.height;
+            let viewReg = new Laya.Rectangle(0, 0, regW, regH);
+            this._map.createMap(`${mName}.json`, viewReg, new Laya.Handler(this, this.onCreated));
+        }
+        onCreated() {
+            this.touchLayer = this.getLayerByName("build");
+            this._map.setViewPortPivotByScale(0, 0);
+            this._map.scale = this.scale;
+            this.initFinder();
+            MapMgr.ins.addToMap();
+            Laya.stage.on(Laya.Event.CLICK, this, this.clickMap);
+        }
+        initFinder() {
+            let mapGridW = this._map.numColumnsTile;
+            let mapGridH = this._map.numRowsTile;
+            this._pathFinder = new PathFinder(mapGridW, mapGridH);
+            let blockLayer = this.getLayerByName("block");
+            for (let x = 0; x < mapGridW; ++x) {
+                for (let y = 0; y < mapGridH; ++y) {
+                    this._pathFinder.setStaticBlock(x, y, blockLayer.getTileData(x, y));
+                }
+            }
+        }
+        clickMap(e) {
+            this.touchLayer.getTilePositionByScreenPos(e.stageX, e.stageY, this.touchPoint);
+            let tileX = this.touchPoint.x | 0;
+            let tileY = this.touchPoint.y | 0;
+            if (this._pathFinder.isWalkable(tileX, tileY)) {
+                this.regNodeView.StartActiveMove(tileX, tileY);
+            }
+        }
+        moveViewPort(pixX, pixY) {
+            let cx = pixX;
+            let cy = pixY;
+            this._map.moveViewPort(cx, cy);
+        }
+        addChild(node) {
+            if (!this.regNodeView) {
+                this.regNodeView = node;
+            }
+            this.getLayerByName("obj").addChild(node);
+            node.initData(this._map);
+            node.updatePos();
+        }
+        getLayerByName(lName) {
+            return this._map.getLayerByName(lName);
+        }
+        destroyMap() {
+            this.touchLayer = null;
+            this.mapName = "";
+            this._map.destroy();
+            this.scale = 1;
+            this._pathFinder.destroy();
+        }
+        get pathFinder() {
+            return this._pathFinder;
+        }
+        get map() {
+            return this._map;
+        }
+    }
+
+    class MapMgr {
+        constructor() {
+            this.nodeList = [];
+        }
+        static get ins() {
+            this._ins || (this._ins = new MapMgr());
+            return this._ins;
+        }
+        addMap(mName) {
+            this.m_Map = new TMap();
+            this.m_Map.createMapByName(mName);
+        }
+        delMap() {
+            for (let i of this.nodeList) {
+                i.destroy();
+                i = null;
+            }
+            this.nodeList = [];
+            this.m_Map.destroyMap();
+            this.m_Map = null;
+        }
+        addToMapList(node) {
+            this.nodeList.push(node);
+        }
+        addToMap() {
+            for (let i of this.nodeList) {
+                this.m_Map.addChild(i);
+                i.updatePos();
+            }
+        }
+        updateViewPort(pixX, pixY) {
+            this.m_Map.moveViewPort(pixX, pixY);
+        }
+        get pathFinder() {
+            return this.m_Map.pathFinder;
+        }
+        get map() {
+            return this.m_Map.map;
+        }
     }
 
     class HeroNode extends Laya.GridSprite {
@@ -331,9 +445,12 @@
             super();
             this.heroNode = new Laya.Sprite();
             this.m_movePath = [];
-            this.heroNode.graphics.drawRect(0, 0, 50, 50, `#ff9999`);
+            this.heroNode.graphics.drawRect(0, 0, 125, 125, `#ff9999`);
             this.addChild(this.heroNode);
             Laya.timer.frameLoop(1, this, this.selfFrame);
+        }
+        initData(map) {
+            super.initData(map);
         }
         StartActiveMove(x, y) {
             let startX = 0;
@@ -345,7 +462,7 @@
                 startY = this.getPixY() / 125;
                 startX = startX | 0;
                 startY = startY | 0;
-                path = GameViewExt.m_pathFinder.findPath(startX, startY, x, y);
+                path = MapMgr.ins.pathFinder.findPath(startX, startY, x, y);
                 this.m_movePath = path;
                 this.m_destNodeIndex = 0;
             }
@@ -364,16 +481,23 @@
         setPixelPosition(x, y) {
             this.relativeX = x;
             this.relativeY = y;
-            let cx = x - (GameViewExt.map.viewPortWidth >> 1);
-            let cy = y - (GameViewExt.map.viewPortHeight >> 1);
+            let map = MapMgr.ins.map;
+            let cx = x - (map.viewPortWidth >> 1);
+            let cy = y - (map.viewPortHeight >> 1);
             cx < 0 && (cx = 0);
-            let maxX = GameViewExt.map.width - GameViewExt.map.viewPortWidth;
+            let maxX = map.width - map.viewPortWidth;
             cx > maxX && (cx = maxX);
             cy < 0 && (cy = 0);
-            let maxY = GameViewExt.map.height - GameViewExt.map.viewPortHeight;
+            let maxY = map.height - map.viewPortHeight;
             cy > maxY && (cy = maxY);
-            GameViewExt.map.moveViewPort(cx, cy);
+            this.moveMapViewPort(cx, cy);
             this.updatePos();
+        }
+        moveMapViewPort(x, y) {
+            MapMgr.ins.updateViewPort(x, y);
+        }
+        updatePos() {
+            super.updatePos();
         }
         getPixX() {
             return this.relativeX;
@@ -381,53 +505,21 @@
         getPixY() {
             return this.relativeY;
         }
+        destroy() {
+            this.heroNode.removeSelf();
+            this.heroNode.destroy();
+            this.heroNode = null;
+            this.removeSelf();
+            super.destroy();
+        }
     }
 
     class GameViewExt extends ui.GameViewUI {
         constructor() {
             super();
-            this.touckPoint = new Laya.Point();
-            this.createTileMap();
-        }
-        createTileMap() {
-            GameViewExt.map = new Laya.TiledMap();
-            let viewReg = new Laya.Rectangle(0, 0, Laya.stage.width, Laya.stage.height);
-            GameViewExt.map.createMap("map/mainmap.json", viewReg, new Laya.Handler(this, this.onCreateComplete));
-        }
-        onCreateComplete() {
-            GameViewExt.map.setViewPortPivotByScale(0, 0);
-            GameViewExt.map.scale = 0.5;
-            this.createHero();
-            this.initFinder();
-        }
-        createHero() {
-            this.touckLayer = GameViewExt.map.getLayerByName("build");
             this.hero = new HeroNode();
-            this.hero.initData(GameViewExt.map);
-            this.touckLayer.addChild(this.hero);
-            this.hero.updatePos();
-            Laya.stage.on(Laya.Event.CLICK, this, this.clickMap);
-        }
-        clickMap(e) {
-            this.touckLayer.getTilePositionByScreenPos(e.stageX, e.stageY, this.touckPoint);
-            let tileX = this.touckPoint.x | 0;
-            let tileY = this.touckPoint.y | 0;
-            let touckWalkable = GameViewExt.m_pathFinder.isWalkable(tileX, tileY);
-            if (touckWalkable) {
-                this.hero.StartActiveMove(tileX, tileY);
-            }
-        }
-        initFinder() {
-            let mapGridW = GameViewExt.map.numColumnsTile;
-            let mapGridH = GameViewExt.map.numRowsTile;
-            GameViewExt.m_pathFinder = new PathFinder(mapGridW, mapGridH);
-            GameViewExt.m_pathFinder.isIgnoreCorner = false;
-            let blockLayer = GameViewExt.map.getLayerByName(`block`);
-            for (let i = 0; i < mapGridW; ++i) {
-                for (let j = 0; j < mapGridH; ++j) {
-                    GameViewExt.m_pathFinder.setStaticBlock(i, j, blockLayer.getTileData(i, j));
-                }
-            }
+            MapMgr.ins.addMap(`map/mainmap`);
+            MapMgr.ins.addToMapList(this.hero);
         }
     }
 

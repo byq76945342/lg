@@ -261,6 +261,7 @@ export default class PathFinder {
     private CalcF(cur: PathNode): number {
         return cur.G + cur.H;
     }
+    public destroy() { }
 
 }
 
