@@ -470,6 +470,7 @@
             else
                 Laya.init(GameConfig.width, GameConfig.height, Laya["WebGL"]);
             Laya["Physics"] && Laya["Physics"].enable();
+            Laya.Stat.show();
             Laya.stage.scaleMode = isFullScreen ? Laya.Stage.SCALE_FIXED_WIDTH : Laya.Stage.SCALE_FIXED_AUTO;
             Laya.stage.screenMode = GameConfig.screenMode;
             Laya.stage.screenAdaptationEnabled = true;
