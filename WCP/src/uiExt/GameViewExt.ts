@@ -14,12 +14,13 @@ export default class GameViewExt extends ui.GameViewUI {
     }
     private createTileMap() {
         GameViewExt.map = new Laya.TiledMap();
-        let viewReg: Laya.Rectangle = new Laya.Rectangle(0, 0, 125 * 20, 125 * 20);
+        let viewReg: Laya.Rectangle = new Laya.Rectangle(0, 0, Laya.stage.width, Laya.stage.height);
 
         GameViewExt.map.createMap("map/mainmap.json", viewReg, new Laya.Handler(this, this.onCreateComplete));
     }
     private onCreateComplete() {
-
+        GameViewExt.map.setViewPortPivotByScale(0, 0);
+        GameViewExt.map.scale = 0.5;
         this.createHero();
         this.initFinder();
 
@@ -28,8 +29,9 @@ export default class GameViewExt extends ui.GameViewUI {
     private createHero() {
         this.touckLayer = GameViewExt.map.getLayerByName("build");
         this.hero = new HeroNode();
-
+        this.hero.initData(GameViewExt.map);
         this.touckLayer.addChild(this.hero);
+        this.hero.updatePos();
         Laya.stage.on(Laya.Event.CLICK, this, this.clickMap);
     }
     private clickMap(e: Laya.Event) {

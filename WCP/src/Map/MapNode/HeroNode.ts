@@ -41,16 +41,27 @@ export default class HeroNode extends Laya.GridSprite {
 
     }
     private setPixelPosition(x: number, y: number) {
-        this.x = x;
-        this.y = y;
+        this.relativeX = x;
+        this.relativeY = y;
+        
+        let cx: number = x - (GameViewExt.map.viewPortWidth >> 1);
+        let cy: number = y - (GameViewExt.map.viewPortHeight >> 1);
+        
+        cx < 0 && (cx = 0);
+        let maxX: number = GameViewExt.map.width - GameViewExt.map.viewPortWidth
+        cx > maxX && (cx = maxX);
+
+        cy < 0 && (cy = 0);
+        let maxY: number = GameViewExt.map.height - GameViewExt.map.viewPortHeight;
+        cy > maxY && (cy = maxY);
+        GameViewExt.map.moveViewPort(cx, cy);
         this.updatePos();
-        // GameViewExt.map.moveViewPort(x, y);
     }
     private getPixX(): number {
-        return this.x;
+        return this.relativeX;
     }
     private getPixY(): number {
-        return this.y;
+        return this.relativeY;
     }
 
 
