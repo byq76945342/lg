@@ -362,15 +362,24 @@
             }
         }
         setPixelPosition(x, y) {
-            this.x = x;
-            this.y = y;
+            this.relativeX = x;
+            this.relativeY = y;
+            let cx = x - (GameViewExt.map.viewPortWidth >> 1);
+            let cy = y - (GameViewExt.map.viewPortHeight >> 1);
+            cx < 0 && (cx = 0);
+            let maxX = GameViewExt.map.width - GameViewExt.map.viewPortWidth;
+            cx > maxX && (cx = maxX);
+            cy < 0 && (cy = 0);
+            let maxY = GameViewExt.map.height - GameViewExt.map.viewPortHeight;
+            cy > maxY && (cy = maxY);
+            GameViewExt.map.moveViewPort(cx, cy);
             this.updatePos();
         }
         getPixX() {
-            return this.x;
+            return this.relativeX;
         }
         getPixY() {
-            return this.y;
+            return this.relativeY;
         }
     }
 
@@ -382,17 +391,21 @@
         }
         createTileMap() {
             GameViewExt.map = new Laya.TiledMap();
-            let viewReg = new Laya.Rectangle(0, 0, 125 * 20, 125 * 20);
+            let viewReg = new Laya.Rectangle(0, 0, Laya.stage.width, Laya.stage.height);
             GameViewExt.map.createMap("map/mainmap.json", viewReg, new Laya.Handler(this, this.onCreateComplete));
         }
         onCreateComplete() {
+            GameViewExt.map.setViewPortPivotByScale(0, 0);
+            GameViewExt.map.scale = 0.5;
             this.createHero();
             this.initFinder();
         }
         createHero() {
             this.touckLayer = GameViewExt.map.getLayerByName("build");
             this.hero = new HeroNode();
+            this.hero.initData(GameViewExt.map);
             this.touckLayer.addChild(this.hero);
+            this.hero.updatePos();
             Laya.stage.on(Laya.Event.CLICK, this, this.clickMap);
         }
         clickMap(e) {
