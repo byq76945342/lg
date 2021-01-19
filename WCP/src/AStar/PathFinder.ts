@@ -165,16 +165,14 @@ export default class PathFinder {
      */
     private getSurroundPoints(curNode: PathNode): Array<PathNode> {
         let surround: PathNode[] = [];
-        let x: number = 0;
-        let y: number = 0;
         let up: PathNode = this.getNodeDirNode(curNode, EnumDir.E0up);
         let down: PathNode = this.getNodeDirNode(curNode, EnumDir.E1down);
         let left: PathNode = this.getNodeDirNode(curNode, EnumDir.E2left);
         let right: PathNode = this.getNodeDirNode(curNode, EnumDir.E3right);
-        let leftUp: PathNode = this.getNodeDirNode(curNode, EnumDir.E4upLeft);
-        let rightUp: PathNode = this.getNodeDirNode(curNode, EnumDir.E5upRight);
-        let leftDown: PathNode = this.getNodeDirNode(curNode, EnumDir.E6downLeft);
-        let rightDown: PathNode = this.getNodeDirNode(curNode, EnumDir.E7downRight);
+        let leftUp: PathNode = this.m_isIgnoreCorner ? this.getNodeDirNode(curNode, EnumDir.E4upLeft) : null;
+        let rightUp: PathNode = this.m_isIgnoreCorner ? this.getNodeDirNode(curNode, EnumDir.E5upRight) : null;
+        let leftDown: PathNode = this.m_isIgnoreCorner ? this.getNodeDirNode(curNode, EnumDir.E6downLeft) : null;
+        let rightDown: PathNode = this.m_isIgnoreCorner ? this.getNodeDirNode(curNode, EnumDir.E7downRight) : null;
         up && surround.push(up);
         down && surround.push(down);
         left && surround.push(left);
