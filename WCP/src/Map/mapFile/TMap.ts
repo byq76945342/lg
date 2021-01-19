@@ -2,38 +2,36 @@ import PathFinder from "../../AStar/PathFinder";
 import MapMgr from "../MapMgr";
 import HeroNode from "../MapNode/HeroNode";
 
-export default class TMap implements MapImp {
+export default class TMap extends Laya.TiledMap implements MapImp {
     protected mapName: string = ""
-    protected _map: Laya.TiledMap;
-    protected scale: number = 1;
     protected _pathFinder: PathFinder;
     private touchLayer: Laya.MapLayer;
     private touchPoint: Laya.Point = new Laya.Point;
     private regNodeView: HeroNode;
     constructor() {
-
+        super();
     }
     createMapByName(mName: string) {
         this.mapName = mName;
-        this._map = new Laya.TiledMap();
         let regW: number = Laya.stage.width;
         let regH: number = Laya.stage.height;
         //需要根据实际的屏幕大小计算缩放比例
         let viewReg: Laya.Rectangle = new Laya.Rectangle(0, 0, regW, regH);
-        this._map.createMap(`${mName}.json`, viewReg, new Laya.Handler(this, this.onCreated));
+        this.createMap(`${mName}.json`, viewReg, new Laya.Handler(this, this.onCreated));
     }
     protected onCreated() {
+        this.scale=0.5;
         this.touchLayer = this.getLayerByName("build");
-        this._map.setViewPortPivotByScale(0, 0);
-        this._map.scale = this.scale;
+        this.setViewPortPivotByScale(0, 0);
+
         this.initFinder();
         MapMgr.ins.addToMap();
         Laya.stage.on(Laya.Event.CLICK, this, this.clickMap);
 
     }
     private initFinder() {
-        let mapGridW: number = this._map.numColumnsTile;
-        let mapGridH: number = this._map.numRowsTile;
+        let mapGridW: number = this.numColumnsTile;
+        let mapGridH: number = this.numRowsTile;
         this._pathFinder = new PathFinder(mapGridW, mapGridH);
         /**设置静态阻挡 */
         let blockLayer: Laya.MapLayer = this.getLayerByName("block");
@@ -55,32 +53,30 @@ export default class TMap implements MapImp {
     moveViewPort(pixX: number, pixY: number) {
         let cx: number = pixX;
         let cy: number = pixY;
-        this._map.moveViewPort(cx, cy);
+        super.moveViewPort(cx, cy);
     }
     addChild(node: HeroNode) {
         if (!this.regNodeView) {
             this.regNodeView = node;
         }
         this.getLayerByName("obj").addChild(node);
-        node.initData(this._map);
+        node.initData(this);
         node.updatePos();
     }
     getLayerByName(lName: string): Laya.MapLayer {
-        return this._map.getLayerByName(lName);
+        return super.getLayerByName(lName);
     }
     destroyMap() {
         this.touchLayer = null;
         this.mapName = "";
-        this._map.destroy();
         this.scale = 1;
         this._pathFinder.destroy();
+        super.destroy();
     }
     public get pathFinder() {
         return this._pathFinder;
     }
-    public get map() {
-        return this._map;
-    }
+
 
 
 

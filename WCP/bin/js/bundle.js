@@ -236,16 +236,14 @@
         }
         getSurroundPoints(curNode) {
             let surround = [];
-            let x = 0;
-            let y = 0;
             let up = this.getNodeDirNode(curNode, EnumDir.E0up);
             let down = this.getNodeDirNode(curNode, EnumDir.E1down);
             let left = this.getNodeDirNode(curNode, EnumDir.E2left);
             let right = this.getNodeDirNode(curNode, EnumDir.E3right);
-            let leftUp = this.getNodeDirNode(curNode, EnumDir.E4upLeft);
-            let rightUp = this.getNodeDirNode(curNode, EnumDir.E5upRight);
-            let leftDown = this.getNodeDirNode(curNode, EnumDir.E6downLeft);
-            let rightDown = this.getNodeDirNode(curNode, EnumDir.E7downRight);
+            let leftUp = this.m_isIgnoreCorner ? this.getNodeDirNode(curNode, EnumDir.E4upLeft) : null;
+            let rightUp = this.m_isIgnoreCorner ? this.getNodeDirNode(curNode, EnumDir.E5upRight) : null;
+            let leftDown = this.m_isIgnoreCorner ? this.getNodeDirNode(curNode, EnumDir.E6downLeft) : null;
+            let rightDown = this.m_isIgnoreCorner ? this.getNodeDirNode(curNode, EnumDir.E7downRight) : null;
             up && surround.push(up);
             down && surround.push(down);
             left && surround.push(left);
@@ -327,31 +325,30 @@
         destroy() { }
     }
 
-    class TMap {
+    class TMap extends Laya.TiledMap {
         constructor() {
+            super();
             this.mapName = "";
-            this.scale = 1;
             this.touchPoint = new Laya.Point;
         }
         createMapByName(mName) {
             this.mapName = mName;
-            this._map = new Laya.TiledMap();
             let regW = Laya.stage.width;
             let regH = Laya.stage.height;
             let viewReg = new Laya.Rectangle(0, 0, regW, regH);
-            this._map.createMap(`${mName}.json`, viewReg, new Laya.Handler(this, this.onCreated));
+            this.createMap(`${mName}.json`, viewReg, new Laya.Handler(this, this.onCreated));
         }
         onCreated() {
+            this.scale = 0.5;
             this.touchLayer = this.getLayerByName("build");
-            this._map.setViewPortPivotByScale(0, 0);
-            this._map.scale = this.scale;
+            this.setViewPortPivotByScale(0, 0);
             this.initFinder();
             MapMgr.ins.addToMap();
             Laya.stage.on(Laya.Event.CLICK, this, this.clickMap);
         }
         initFinder() {
-            let mapGridW = this._map.numColumnsTile;
-            let mapGridH = this._map.numRowsTile;
+            let mapGridW = this.numColumnsTile;
+            let mapGridH = this.numRowsTile;
             this._pathFinder = new PathFinder(mapGridW, mapGridH);
             let blockLayer = this.getLayerByName("block");
             for (let x = 0; x < mapGridW; ++x) {
@@ -371,31 +368,28 @@
         moveViewPort(pixX, pixY) {
             let cx = pixX;
             let cy = pixY;
-            this._map.moveViewPort(cx, cy);
+            super.moveViewPort(cx, cy);
         }
         addChild(node) {
             if (!this.regNodeView) {
                 this.regNodeView = node;
             }
             this.getLayerByName("obj").addChild(node);
-            node.initData(this._map);
+            node.initData(this);
             node.updatePos();
         }
         getLayerByName(lName) {
-            return this._map.getLayerByName(lName);
+            return super.getLayerByName(lName);
         }
         destroyMap() {
             this.touchLayer = null;
             this.mapName = "";
-            this._map.destroy();
             this.scale = 1;
             this._pathFinder.destroy();
+            super.destroy();
         }
         get pathFinder() {
             return this._pathFinder;
-        }
-        get map() {
-            return this._map;
         }
     }
 
@@ -436,15 +430,27 @@
             return this.m_Map.pathFinder;
         }
         get map() {
-            return this.m_Map.map;
+            return this.m_Map;
         }
     }
+
+    class NodeUtil {
+        static TilePixX(tx) {
+            return (tx * this.GRIDSIZE);
+        }
+        static TilePixY(ty) {
+            return (ty * this.GRIDSIZE);
+        }
+    }
+    NodeUtil.GRIDSIZE = 125;
 
     class HeroNode extends Laya.GridSprite {
         constructor() {
             super();
             this.heroNode = new Laya.Sprite();
             this.m_movePath = [];
+            this.m_speed = 5;
+            this.Tilepos = new Laya.Point();
             this.heroNode.graphics.drawRect(0, 0, 125, 125, `#ff9999`);
             this.addChild(this.heroNode);
             Laya.timer.frameLoop(1, this, this.selfFrame);
@@ -458,10 +464,8 @@
             let path;
             this.m_movePath = [];
             if (!this.m_movePath.length) {
-                startX = this.getPixX() / 125;
-                startY = this.getPixY() / 125;
-                startX = startX | 0;
-                startY = startY | 0;
+                startX = this.getTileX();
+                startY = this.getTileY();
                 path = MapMgr.ins.pathFinder.findPath(startX, startY, x, y);
                 this.m_movePath = path;
                 this.m_destNodeIndex = 0;
@@ -469,9 +473,30 @@
         }
         selfFrame() {
             if (this.m_destNodeIndex != null) {
-                if (this.m_movePath[this.m_destNodeIndex]) {
-                    this.setPixelPosition(this.m_movePath[this.m_destNodeIndex].x * 125, this.m_movePath[this.m_destNodeIndex].y * 125);
-                    this.m_destNodeIndex += 1;
+                let pathHead = this.m_movePath[this.m_destNodeIndex];
+                if (pathHead) {
+                    let dirTx = pathHead.x;
+                    let dirTy = pathHead.y;
+                    let curTx = this.getTileX();
+                    let curTy = this.getTileY();
+                    let TileDir = new Laya.Point(dirTx - curTx, dirTy - curTy);
+                    let endx = this.getPixX() + this.m_speed * (TileDir.x);
+                    let endy = this.getPixY() + this.m_speed * (TileDir.y);
+                    let pixDir = new Laya.Point(dirTx * NodeUtil.GRIDSIZE - endx, dirTy * NodeUtil.GRIDSIZE - endy);
+                    TileDir.normalize();
+                    pixDir.normalize();
+                    TileDir.x *= 5;
+                    TileDir.y *= 5;
+                    pixDir.x *= 5;
+                    pixDir.y *= 5;
+                    if (TileDir.x + pixDir.x == 0 && TileDir.y + pixDir.y == 0) {
+                        this.Tilepos.setTo(pathHead.x, pathHead.y);
+                        this.setPixelPosition(dirTx * NodeUtil.GRIDSIZE, dirTy * NodeUtil.GRIDSIZE);
+                        this.m_destNodeIndex += 1;
+                    }
+                    else {
+                        this.setPixelPosition(endx, endy);
+                    }
                 }
                 else {
                     this.m_destNodeIndex = null;
@@ -482,14 +507,16 @@
             this.relativeX = x;
             this.relativeY = y;
             let map = MapMgr.ins.map;
-            let cx = x - (map.viewPortWidth >> 1);
-            let cy = y - (map.viewPortHeight >> 1);
-            cx < 0 && (cx = 0);
+            let offx = 0;
+            let offy = 0;
+            let cx = x + offx - (map.viewPortWidth >> 1);
+            let cy = y + offy - (map.viewPortHeight >> 1);
             let maxX = map.width - map.viewPortWidth;
             cx > maxX && (cx = maxX);
-            cy < 0 && (cy = 0);
+            cx < 0 && (cx = 0);
             let maxY = map.height - map.viewPortHeight;
             cy > maxY && (cy = maxY);
+            cy < 0 && (cy = 0);
             this.moveMapViewPort(cx, cy);
             this.updatePos();
         }
@@ -504,6 +531,12 @@
         }
         getPixY() {
             return this.relativeY;
+        }
+        getTileX() {
+            return this.Tilepos.x;
+        }
+        getTileY() {
+            return this.Tilepos.y;
         }
         destroy() {
             this.heroNode.removeSelf();
@@ -531,13 +564,13 @@
             reg("uiExt/GameViewExt.ts", GameViewExt);
         }
     }
-    GameConfig.width = 640;
-    GameConfig.height = 1136;
-    GameConfig.scaleMode = "fixedwidth";
-    GameConfig.screenMode = "none";
-    GameConfig.alignV = "top";
-    GameConfig.alignH = "left";
-    GameConfig.startScene = "BottomView.scene";
+    GameConfig.width = 1334;
+    GameConfig.height = 750;
+    GameConfig.scaleMode = "fixedheight";
+    GameConfig.screenMode = "horizontal";
+    GameConfig.alignV = "middle";
+    GameConfig.alignH = "center";
+    GameConfig.startScene = "LoadingView.scene";
     GameConfig.sceneRoot = "";
     GameConfig.debug = false;
     GameConfig.stat = false;
@@ -547,23 +580,13 @@
 
     class Main {
         constructor() {
-            let needChangeHW = Laya.Browser.clientHeight > Laya.Browser.clientWidth;
-            let borwerH = needChangeHW ? Laya.Browser.clientHeight : Laya.Browser.clientWidth;
-            let browerW = needChangeHW ? Laya.Browser.clientWidth : Laya.Browser.clientHeight;
-            let rhw = borwerH / browerW;
-            let dhw = GameConfig.height / GameConfig.width;
-            let isFullScreen = rhw > dhw;
-            if (isFullScreen) {
-                GameConfig.height = borwerH / browerW * GameConfig.width;
-                GameConfig.height = GameConfig.height | 0;
-            }
             if (window["Laya3D"])
                 Laya3D.init(GameConfig.width, GameConfig.height);
             else
                 Laya.init(GameConfig.width, GameConfig.height, Laya["WebGL"]);
             Laya["Physics"] && Laya["Physics"].enable();
             Laya.Stat.show();
-            Laya.stage.scaleMode = isFullScreen ? Laya.Stage.SCALE_FIXED_WIDTH : Laya.Stage.SCALE_FIXED_AUTO;
+            Laya.stage.scaleMode = GameConfig.scaleMode;
             Laya.stage.screenMode = GameConfig.screenMode;
             Laya.stage.screenAdaptationEnabled = true;
             Laya.stage.alignV = GameConfig.alignV;

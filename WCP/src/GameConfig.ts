@@ -5,13 +5,13 @@ import GameViewExt from "./uiExt/GameViewExt"
 * 游戏初始化配置;
 */
 export default class GameConfig{
-    static width:number=640;
-    static height:number=1136;
-    static scaleMode:string="fixedwidth";
-    static screenMode:string="none";
-    static alignV:string="top";
-    static alignH:string="left";
-    static startScene:any="BottomView.scene";
+    static width:number=1334;
+    static height:number=750;
+    static scaleMode:string="fixedheight";
+    static screenMode:string="horizontal";
+    static alignV:string="middle";
+    static alignH:string="center";
+    static startScene:any="LoadingView.scene";
     static sceneRoot:string="";
     static debug:boolean=false;
     static stat:boolean=false;

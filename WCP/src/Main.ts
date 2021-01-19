@@ -2,30 +2,17 @@ import GameConfig from "./GameConfig";
 import UIMgr from "./uiUtil.ts/UIMgr";
 class Main {
 	constructor() {
-		//根据IDE设置初始化引擎		
-		let needChangeHW: boolean = Laya.Browser.clientHeight > Laya.Browser.clientWidth;
-		let borwerH: number = needChangeHW ? Laya.Browser.clientHeight : Laya.Browser.clientWidth;
-		let browerW: number = needChangeHW ? Laya.Browser.clientWidth : Laya.Browser.clientHeight;
-		let rhw: number = borwerH / browerW;
-		let dhw: number = GameConfig.height / GameConfig.width;
-		let isFullScreen: boolean = rhw > dhw;
-		if (isFullScreen) {
-			GameConfig.height = borwerH / browerW * GameConfig.width;
-			GameConfig.height = GameConfig.height | 0;
-		}
 
 		if (window["Laya3D"]) Laya3D.init(GameConfig.width, GameConfig.height);
 		else Laya.init(GameConfig.width, GameConfig.height, Laya["WebGL"]);
 		Laya["Physics"] && Laya["Physics"].enable();
 		// Laya.enableDebugPanel();
 		Laya.Stat.show();
-		Laya.stage.scaleMode = isFullScreen ? Laya.Stage.SCALE_FIXED_WIDTH : Laya.Stage.SCALE_FIXED_AUTO;
-		// Laya.stage.scaleMode=Laya.Stage.SCALE_FIXED_AUTO;
+		Laya.stage.scaleMode = GameConfig.scaleMode;
 		Laya.stage.screenMode = GameConfig.screenMode;
 		Laya.stage.screenAdaptationEnabled = true;
 		Laya.stage.alignV = GameConfig.alignV;
 		Laya.stage.alignH = GameConfig.alignH;
-		// Laya.stage.bgColor="#ff1542";
 		//兼容微信不支持加载scene后缀场景
 		Laya.URL.exportSceneToJson = GameConfig.exportSceneToJson;
 
