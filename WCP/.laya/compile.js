@@ -32,12 +32,12 @@ gulp.task("compile", prevTasks, function () {
 
 	return rollup.rollup({
 		input: workSpaceDir + '/src/Main.ts',
-		onwarn:(waring,warn)=>{
+		/*onwarn:(waring,warn)=>{
 			if(waring.code == "CIRCULAR_DEPENDENCY"){
 				console.log("warnning Circular dependency:");
 				console.log(waring);
 			}
-		},
+		},*/
 		treeshake: false, //建议忽略
 		plugins: [
 			typescript({
