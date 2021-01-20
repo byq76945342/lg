@@ -1,6 +1,7 @@
 import PathFinder from "../../AStar/PathFinder";
 import MapMgr from "../MapMgr";
 import HeroNode from "../MapNode/HeroNode";
+import NodeUtil from "../NodeUtil";
 
 export default class TMap extends Laya.TiledMap implements MapImp {
     protected mapName: string = ""
@@ -20,14 +21,22 @@ export default class TMap extends Laya.TiledMap implements MapImp {
         this.createMap(`${mName}.json`, viewReg, new Laya.Handler(this, this.onCreated));
     }
     protected onCreated() {
-        this.scale=0.5;
+
         this.touchLayer = this.getLayerByName("build");
         this.setViewPortPivotByScale(0, 0);
 
         this.initFinder();
-        MapMgr.ins.addToMap();
-        Laya.stage.on(Laya.Event.CLICK, this, this.clickMap);
 
+        Laya.stage.on(Laya.Event.CLICK, this, this.clickMap);
+        Laya.stage.on(Laya.Event.RESIZE, this, this.resetViewReg);
+        this.resetViewReg();
+        this.moveViewPort(0, 0);
+        MapMgr.ins.addToMap();
+    }
+    private resetViewReg() {
+        this.numColumnsTile * NodeUtil.GRIDSIZE
+        this.scale = Laya.stage.width / ( this.numColumnsTile * NodeUtil.GRIDSIZE);
+        this.changeViewPortBySize(Laya.stage.width, Laya.stage.height);
     }
     private initFinder() {
         let mapGridW: number = this.numColumnsTile;

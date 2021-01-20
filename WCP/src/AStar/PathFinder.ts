@@ -60,6 +60,7 @@ export default class PathFinder {
             resultNode = resultNode.parent;
         }
         path.reverse();
+        path.shift();//去掉所在位置
         return path;
     }
     private SearchPath(startX: number, startY: number, endX: number, endY: number): PathNode {
@@ -81,7 +82,9 @@ export default class PathFinder {
             }
             this.delOpenNode(curNode);
             this.addCloseNode(curNode);
-            if (curNode == endNode) return curNode;//找到的這個點是終點的話直接返回這個點
+            if (curNode == endNode) {
+                return curNode;//找到的這個點是終點的話直接返回這個點
+            }
             let surroundPoints: Array<PathNode> = this.getSurroundPoints(curNode);
             for (let target of surroundPoints) {
                 let tempG: number = this.CalcG(curNode, target);
@@ -147,14 +150,12 @@ export default class PathFinder {
      * 獲得開啓列表中F最小的節點
      */
     private findMinFInOpenList(): PathNode {
-        let len: number = this.m_openList.length;
-
         let minFNode: PathNode;
         for (let i of this.m_openList) {
             if (!minFNode) {
                 minFNode = i;
             }
-            else if (i.F <= minFNode.F) {
+            else if (i.F < minFNode.F) {
                 minFNode = i;
             }
         }
@@ -253,7 +254,7 @@ export default class PathFinder {
         let squareX: number = (end.x - cur.x) * (end.x - cur.x);
         let squareY: number = (end.y - cur.y) * (end.y - cur.y);
         let edgeCost: number = Math.sqrt(squareX + squareY) * this.m_kCost1;
-        edgeCost | 0;
+        edgeCost = edgeCost | 0;
         return edgeCost;
     }
     private CalcF(cur: PathNode): number {
