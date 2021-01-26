@@ -6,7 +6,9 @@
     var ui;
     (function (ui) {
         class BottomViewUI extends View {
-            constructor() { super(); }
+            constructor() {
+                super();
+            }
             createChildren() {
                 super.createChildren();
                 this.createView(BottomViewUI.uiView);
@@ -419,7 +421,8 @@
     }
 
     class GameConfig {
-        constructor() { }
+        constructor() {
+        }
         static init() {
             var reg = Laya.ClassUtils.regClass;
             reg("uiExt/BottomViewExt.ts", BottomViewExt);
