@@ -13,6 +13,15 @@ export module ui {
         }
     }
     REG("ui.BottomViewUI",BottomViewUI);
+    export class DimageViewUI extends View {
+		public tarplane:Laya.Image;
+        constructor(){ super()}
+        createChildren():void {
+            super.createChildren();
+            this.loadScene("DimageView");
+        }
+    }
+    REG("ui.DimageViewUI",DimageViewUI);
     export class GameViewUI extends View {
         constructor(){ super()}
         createChildren():void {

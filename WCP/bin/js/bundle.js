@@ -15,6 +15,15 @@
         BottomViewUI.uiView = { "type": "View", "props": { "y": 0, "width": 512, "runtime": "uiExt/BottomViewExt.ts", "height": 313, "centerY": 0, "centerX": 0 }, "compId": 2, "child": [{ "type": "Image", "props": { "y": 0, "x": 0, "skin": "comp/image.png" }, "compId": 12 }], "loadList": ["comp/image.png"], "loadList3D": [] };
         ui.BottomViewUI = BottomViewUI;
         REG("ui.BottomViewUI", BottomViewUI);
+        class DimageViewUI extends View {
+            constructor() { super(); }
+            createChildren() {
+                super.createChildren();
+                this.loadScene("DimageView");
+            }
+        }
+        ui.DimageViewUI = DimageViewUI;
+        REG("ui.DimageViewUI", DimageViewUI);
         class GameViewUI extends View {
             constructor() { super(); }
             createChildren() {
@@ -72,7 +81,13 @@
         }
         closeThis() {
             UIMgr.ins.closeView(`LoadingView`);
-            UIMgr.ins.openView(`GameView`);
+            UIMgr.ins.openView(`DimageView`);
+        }
+    }
+
+    class DimageViewExt extends ui.DimageViewUI {
+        constructor() {
+            super();
         }
     }
 
@@ -583,6 +598,7 @@
         static init() {
             var reg = Laya.ClassUtils.regClass;
             reg("uiExt/BottomViewExt.ts", BottomViewExt);
+            reg("uiExt/DimageViewExt.ts", DimageViewExt);
             reg("uiExt/GameViewExt.ts", GameViewExt);
         }
     }
@@ -592,7 +608,7 @@
     GameConfig.screenMode = "horizontal";
     GameConfig.alignV = "middle";
     GameConfig.alignH = "center";
-    GameConfig.startScene = "BottomView.scene";
+    GameConfig.startScene = "DimageView.scene";
     GameConfig.sceneRoot = "";
     GameConfig.debug = false;
     GameConfig.stat = false;
