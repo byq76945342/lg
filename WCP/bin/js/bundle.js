@@ -17,6 +17,15 @@
         BottomViewUI.uiView = { "type": "View", "props": { "y": 0, "width": 512, "runtime": "uiExt/BottomViewExt.ts", "height": 313, "centerY": 0, "centerX": 0 }, "compId": 2, "child": [{ "type": "Image", "props": { "y": 0, "x": 0, "skin": "comp/image.png" }, "compId": 12 }], "loadList": ["comp/image.png"], "loadList3D": [] };
         ui.BottomViewUI = BottomViewUI;
         REG("ui.BottomViewUI", BottomViewUI);
+        class DimageViewUI extends View {
+            constructor() { super(); }
+            createChildren() {
+                super.createChildren();
+                this.loadScene("DimageView");
+            }
+        }
+        ui.DimageViewUI = DimageViewUI;
+        REG("ui.DimageViewUI", DimageViewUI);
         class GameViewUI extends View {
             constructor() { super(); }
             createChildren() {
@@ -74,7 +83,13 @@
         }
         closeThis() {
             UIMgr.ins.closeView(`LoadingView`);
-            UIMgr.ins.openView(`GameView`);
+            UIMgr.ins.openView(`DimageView`);
+        }
+    }
+
+    class DimageViewExt extends ui.DimageViewUI {
+        constructor() {
+            super();
         }
     }
 
@@ -159,6 +174,7 @@
                 resultNode = resultNode.parent;
             }
             path.reverse();
+            path.shift();
             return path;
         }
         SearchPath(startX, startY, endX, endY) {
@@ -180,8 +196,9 @@
                 }
                 this.delOpenNode(curNode);
                 this.addCloseNode(curNode);
-                if (curNode == endNode)
+                if (curNode == endNode) {
                     return curNode;
+                }
                 let surroundPoints = this.getSurroundPoints(curNode);
                 for (let target of surroundPoints) {
                     let tempG = this.CalcG(curNode, target);
@@ -224,13 +241,12 @@
             return index > -1;
         }
         findMinFInOpenList() {
-            let len = this.m_openList.length;
             let minFNode;
             for (let i of this.m_openList) {
                 if (!minFNode) {
                     minFNode = i;
                 }
-                else if (i.F <= minFNode.F) {
+                else if (i.F < minFNode.F) {
                     minFNode = i;
                 }
             }
@@ -238,16 +254,14 @@
         }
         getSurroundPoints(curNode) {
             let surround = [];
-            let x = 0;
-            let y = 0;
             let up = this.getNodeDirNode(curNode, EnumDir.E0up);
             let down = this.getNodeDirNode(curNode, EnumDir.E1down);
             let left = this.getNodeDirNode(curNode, EnumDir.E2left);
             let right = this.getNodeDirNode(curNode, EnumDir.E3right);
-            let leftUp = this.getNodeDirNode(curNode, EnumDir.E4upLeft);
-            let rightUp = this.getNodeDirNode(curNode, EnumDir.E5upRight);
-            let leftDown = this.getNodeDirNode(curNode, EnumDir.E6downLeft);
-            let rightDown = this.getNodeDirNode(curNode, EnumDir.E7downRight);
+            let leftUp = this.m_isIgnoreCorner ? this.getNodeDirNode(curNode, EnumDir.E4upLeft) : null;
+            let rightUp = this.m_isIgnoreCorner ? this.getNodeDirNode(curNode, EnumDir.E5upRight) : null;
+            let leftDown = this.m_isIgnoreCorner ? this.getNodeDirNode(curNode, EnumDir.E6downLeft) : null;
+            let rightDown = this.m_isIgnoreCorner ? this.getNodeDirNode(curNode, EnumDir.E7downRight) : null;
             up && surround.push(up);
             down && surround.push(down);
             left && surround.push(left);
@@ -320,11 +334,138 @@
             let squareX = (end.x - cur.x) * (end.x - cur.x);
             let squareY = (end.y - cur.y) * (end.y - cur.y);
             let edgeCost = Math.sqrt(squareX + squareY) * this.m_kCost1;
-            edgeCost | 0;
+            edgeCost = edgeCost | 0;
             return edgeCost;
         }
         CalcF(cur) {
             return cur.G + cur.H;
+        }
+        destroy() { }
+    }
+
+    class NodeUtil {
+        static TilePixX(tx) {
+            return (tx * this.GRIDSIZE);
+        }
+        static TilePixY(ty) {
+            return (ty * this.GRIDSIZE);
+        }
+    }
+    NodeUtil.GRIDSIZE = 125;
+
+    class TMap extends Laya.TiledMap {
+        constructor() {
+            super();
+            this.mapName = "";
+            this.touchPoint = new Laya.Point;
+        }
+        createMapByName(mName) {
+            this.mapName = mName;
+            let regW = Laya.stage.width;
+            let regH = Laya.stage.height;
+            let viewReg = new Laya.Rectangle(0, 0, regW, regH);
+            this.createMap(`${mName}.json`, viewReg, new Laya.Handler(this, this.onCreated));
+        }
+        onCreated() {
+            this.touchLayer = this.getLayerByName("build");
+            this.setViewPortPivotByScale(0, 0);
+            this.initFinder();
+            Laya.stage.on(Laya.Event.CLICK, this, this.clickMap);
+            Laya.stage.on(Laya.Event.RESIZE, this, this.resetViewReg);
+            this.resetViewReg();
+            this.moveViewPort(0, 0);
+            MapMgr.ins.addToMap();
+        }
+        resetViewReg() {
+            this.numColumnsTile * NodeUtil.GRIDSIZE;
+            this.scale = Laya.stage.width / (this.numColumnsTile * NodeUtil.GRIDSIZE);
+            this.changeViewPortBySize(Laya.stage.width, Laya.stage.height);
+        }
+        initFinder() {
+            let mapGridW = this.numColumnsTile;
+            let mapGridH = this.numRowsTile;
+            this._pathFinder = new PathFinder(mapGridW, mapGridH);
+            let blockLayer = this.getLayerByName("block");
+            for (let x = 0; x < mapGridW; ++x) {
+                for (let y = 0; y < mapGridH; ++y) {
+                    this._pathFinder.setStaticBlock(x, y, blockLayer.getTileData(x, y));
+                }
+            }
+        }
+        clickMap(e) {
+            this.touchLayer.getTilePositionByScreenPos(e.stageX, e.stageY, this.touchPoint);
+            let tileX = this.touchPoint.x | 0;
+            let tileY = this.touchPoint.y | 0;
+            if (this._pathFinder.isWalkable(tileX, tileY)) {
+                this.regNodeView.StartActiveMove(tileX, tileY);
+            }
+        }
+        moveViewPort(pixX, pixY) {
+            let cx = pixX;
+            let cy = pixY;
+            super.moveViewPort(cx, cy);
+        }
+        addChild(node) {
+            if (!this.regNodeView) {
+                this.regNodeView = node;
+            }
+            this.getLayerByName("obj").addChild(node);
+            node.initData(this);
+            node.updatePos();
+        }
+        getLayerByName(lName) {
+            return super.getLayerByName(lName);
+        }
+        destroyMap() {
+            this.touchLayer = null;
+            this.mapName = "";
+            this.scale = 1;
+            this._pathFinder.destroy();
+            super.destroy();
+        }
+        get pathFinder() {
+            return this._pathFinder;
+        }
+    }
+
+    class MapMgr {
+        constructor() {
+            this.nodeList = [];
+        }
+        static get ins() {
+            this._ins || (this._ins = new MapMgr());
+            return this._ins;
+        }
+        addMap(mName) {
+            this.m_Map = new TMap();
+            this.m_Map.createMapByName(mName);
+        }
+        delMap() {
+            for (let i of this.nodeList) {
+                i.destroy();
+                i = null;
+            }
+            this.nodeList = [];
+            this.m_Map.destroyMap();
+            this.m_Map = null;
+        }
+        addToMapList(node) {
+            this.nodeList.push(node);
+        }
+        addToMap() {
+            for (let i of this.nodeList) {
+                this.m_Map.addChild(i);
+                i.updatePos();
+            }
+        }
+        updateViewPort(pixX, pixY) {
+            this.m_Map.moveViewPort(pixX, pixY);
+        }
+        get pathFinder() {
+            return this.m_Map.pathFinder;
+        }
+        get map() {
+            return this.m_Map;
         }
     }
 
@@ -333,90 +474,124 @@
             super();
             this.heroNode = new Laya.Sprite();
             this.m_movePath = [];
-            this.heroNode.graphics.drawRect(0, 0, 50, 50, `#ff9999`);
+            this.m_speed = 30;
+            this.Tilepos = new Laya.Point();
+            this.heroNode.graphics.drawRect(0, 0, 125, 125, `#ff9999`);
             this.addChild(this.heroNode);
             Laya.timer.frameLoop(1, this, this.selfFrame);
+        }
+        initData(map) {
+            super.initData(map);
         }
         StartActiveMove(x, y) {
             let startX = 0;
             let startY = 0;
             let path;
-            this.m_movePath = [];
-            if (!this.m_movePath.length) {
-                startX = this.getPixX() / 125;
-                startY = this.getPixY() / 125;
-                startX = startX | 0;
-                startY = startY | 0;
-                path = GameViewExt.m_pathFinder.findPath(startX, startY, x, y);
+            startX = this.getTileX();
+            startY = this.getTileY();
+            if (this.m_destNodeIndex == null) {
+                path = MapMgr.ins.pathFinder.findPath(startX, startY, x, y);
+                if (!path.length)
+                    return;
                 this.m_movePath = path;
                 this.m_destNodeIndex = 0;
             }
-        }
-        selfFrame() {
-            if (this.m_destNodeIndex != null) {
-                if (this.m_movePath[this.m_destNodeIndex]) {
-                    this.setPixelPosition(this.m_movePath[this.m_destNodeIndex].x * 125, this.m_movePath[this.m_destNodeIndex].y * 125);
-                    this.m_destNodeIndex += 1;
-                }
-                else {
-                    this.m_destNodeIndex = null;
-                }
+            else {
+                startX = this.m_movePath[this.m_destNodeIndex].x;
+                startY = this.m_movePath[this.m_destNodeIndex].y;
+                path = MapMgr.ins.pathFinder.findPath(startX, startY, x, y);
+                if (!path.length)
+                    return;
+                this.StopCurMove();
+                this.m_movePath = this.m_movePath.concat(path);
             }
         }
+        StopCurMove() {
+            if (this.m_movePath.length <= 0)
+                return;
+            this.m_movePath.splice(this.m_destNodeIndex + 1);
+        }
+        selfFrame() {
+            if (this.m_destNodeIndex == null)
+                return;
+            let m_destPixelPosX = NodeUtil.TilePixX(this.m_movePath[this.m_destNodeIndex].x);
+            let m_destPixelPosY = NodeUtil.TilePixY(this.m_movePath[this.m_destNodeIndex].y);
+            let moveLength = this.m_speed;
+            let moveDir = new Laya.Point(m_destPixelPosX - this.getPixX(), m_destPixelPosY - this.getPixY());
+            let destDistance = moveDir.distance(0, 0);
+            while (moveLength >= destDistance) {
+                this.setPixelPosition(m_destPixelPosX, m_destPixelPosY);
+                this.m_destNodeIndex += 1;
+                if (this.m_destNodeIndex >= this.m_movePath.length) {
+                    this.Tilepos.setTo(this.m_movePath[this.m_movePath.length - 1].x, this.m_movePath[this.m_movePath.length - 1].y);
+                    this.m_destNodeIndex = null;
+                    return;
+                }
+                m_destPixelPosX = NodeUtil.TilePixX(this.m_movePath[this.m_destNodeIndex].x);
+                m_destPixelPosY = NodeUtil.TilePixY(this.m_movePath[this.m_destNodeIndex].y);
+                moveLength -= destDistance;
+                moveDir.setTo(m_destPixelPosX - this.getPixX(), m_destPixelPosY - this.getPixY());
+                destDistance = moveDir.distance(0, 0);
+            }
+            moveDir.normalize();
+            let cosAngle = moveDir.x;
+            let sinAngle = moveDir.y;
+            moveDir.x = moveLength * cosAngle;
+            moveDir.y = moveLength * sinAngle;
+            let pixelPosX = (this.getPixX() + moveDir.x);
+            let pixelPosY = (this.getPixY() + moveDir.y);
+            this.setPixelPosition(pixelPosX, pixelPosY);
+        }
         setPixelPosition(x, y) {
-            this.x = x;
-            this.y = y;
+            this.relativeX = x | 0;
+            this.relativeY = y | 0;
+            let map = MapMgr.ins.map;
+            let offx = 0;
+            let offy = 0;
+            let cx = x + offx - (map.viewPortWidth >> 1);
+            let cy = y + offy - (map.viewPortHeight >> 1);
+            let maxX = map.width - map.viewPortWidth;
+            cx > maxX && (cx = maxX);
+            cx < 0 && (cx = 0);
+            let maxY = map.height - map.viewPortHeight;
+            cy > maxY && (cy = maxY);
+            cy < 0 && (cy = 0);
+            this.moveMapViewPort(cx, cy);
             this.updatePos();
         }
+        moveMapViewPort(x, y) {
+            MapMgr.ins.updateViewPort(x, y);
+        }
+        updatePos() {
+            super.updatePos();
+        }
         getPixX() {
-            return this.x;
+            return (this.relativeX | 0);
         }
         getPixY() {
-            return this.y;
+            return (this.relativeY | 0);
+        }
+        getTileX() {
+            return this.Tilepos.x;
+        }
+        getTileY() {
+            return this.Tilepos.y;
+        }
+        destroy() {
+            this.heroNode.removeSelf();
+            this.heroNode.destroy();
+            this.heroNode = null;
+            this.removeSelf();
+            super.destroy();
         }
     }
 
     class GameViewExt extends ui.GameViewUI {
         constructor() {
             super();
-            this.touckPoint = new Laya.Point();
-            this.createTileMap();
-        }
-        createTileMap() {
-            GameViewExt.map = new Laya.TiledMap();
-            let viewReg = new Laya.Rectangle(0, 0, 125 * 20, 125 * 20);
-            GameViewExt.map.createMap("map/mainmap.json", viewReg, new Laya.Handler(this, this.onCreateComplete));
-        }
-        onCreateComplete() {
-            this.createHero();
-            this.initFinder();
-        }
-        createHero() {
-            this.touckLayer = GameViewExt.map.getLayerByName("build");
             this.hero = new HeroNode();
-            this.touckLayer.addChild(this.hero);
-            Laya.stage.on(Laya.Event.CLICK, this, this.clickMap);
-        }
-        clickMap(e) {
-            this.touckLayer.getTilePositionByScreenPos(e.stageX, e.stageY, this.touckPoint);
-            let tileX = this.touckPoint.x | 0;
-            let tileY = this.touckPoint.y | 0;
-            let touckWalkable = GameViewExt.m_pathFinder.isWalkable(tileX, tileY);
-            if (touckWalkable) {
-                this.hero.StartActiveMove(tileX, tileY);
-            }
-        }
-        initFinder() {
-            let mapGridW = GameViewExt.map.numColumnsTile;
-            let mapGridH = GameViewExt.map.numRowsTile;
-            GameViewExt.m_pathFinder = new PathFinder(mapGridW, mapGridH);
-            GameViewExt.m_pathFinder.isIgnoreCorner = false;
-            let blockLayer = GameViewExt.map.getLayerByName(`block`);
-            for (let i = 0; i < mapGridW; ++i) {
-                for (let j = 0; j < mapGridH; ++j) {
-                    GameViewExt.m_pathFinder.setStaticBlock(i, j, blockLayer.getTileData(i, j));
-                }
-            }
+            MapMgr.ins.addMap(`map/mainmap`);
+            MapMgr.ins.addToMapList(this.hero);
         }
     }
 
@@ -426,16 +601,17 @@
         static init() {
             var reg = Laya.ClassUtils.regClass;
             reg("uiExt/BottomViewExt.ts", BottomViewExt);
+            reg("uiExt/DimageViewExt.ts", DimageViewExt);
             reg("uiExt/GameViewExt.ts", GameViewExt);
         }
     }
-    GameConfig.width = 640;
-    GameConfig.height = 1136;
-    GameConfig.scaleMode = "fixedwidth";
-    GameConfig.screenMode = "none";
-    GameConfig.alignV = "top";
-    GameConfig.alignH = "left";
-    GameConfig.startScene = "BottomView.scene";
+    GameConfig.width = 1334;
+    GameConfig.height = 750;
+    GameConfig.scaleMode = "fixedheight";
+    GameConfig.screenMode = "horizontal";
+    GameConfig.alignV = "middle";
+    GameConfig.alignH = "center";
+    GameConfig.startScene = "DimageView.scene";
     GameConfig.sceneRoot = "";
     GameConfig.debug = false;
     GameConfig.stat = false;
@@ -445,22 +621,13 @@
 
     class Main {
         constructor() {
-            let needChangeHW = Laya.Browser.clientHeight > Laya.Browser.clientWidth;
-            let borwerH = needChangeHW ? Laya.Browser.clientHeight : Laya.Browser.clientWidth;
-            let browerW = needChangeHW ? Laya.Browser.clientWidth : Laya.Browser.clientHeight;
-            let rhw = borwerH / browerW;
-            let dhw = GameConfig.height / GameConfig.width;
-            let isFullScreen = rhw > dhw;
-            if (isFullScreen) {
-                GameConfig.height = borwerH / browerW * GameConfig.width;
-                GameConfig.height = GameConfig.height | 0;
-            }
             if (window["Laya3D"])
                 Laya3D.init(GameConfig.width, GameConfig.height);
             else
                 Laya.init(GameConfig.width, GameConfig.height, Laya["WebGL"]);
             Laya["Physics"] && Laya["Physics"].enable();
-            Laya.stage.scaleMode = isFullScreen ? Laya.Stage.SCALE_FIXED_WIDTH : Laya.Stage.SCALE_FIXED_AUTO;
+            Laya.Stat.show();
+            Laya.stage.scaleMode = GameConfig.scaleMode;
             Laya.stage.screenMode = GameConfig.screenMode;
             Laya.stage.screenAdaptationEnabled = true;
             Laya.stage.alignV = GameConfig.alignV;
