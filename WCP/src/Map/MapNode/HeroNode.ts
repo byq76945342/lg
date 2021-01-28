@@ -13,6 +13,7 @@ export default class HeroNode extends Laya.GridSprite {
         this.heroNode.graphics.drawRect(0, 0, 125, 125, `#ff9999`);
         this.addChild(this.heroNode);
         Laya.timer.frameLoop(1, this, this.selfFrame);
+    //   this.on()
     }
     initData(map: Laya.TiledMap) {
         super.initData(map);

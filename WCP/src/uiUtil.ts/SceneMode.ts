@@ -3,7 +3,8 @@ export class SceneMode implements ViewMode {
     constructor() { }
     openView(fName: string) {
         let fullName: string = fName + `.scene`;
-        Laya.Scene.open(fullName);
+        Laya.Scene.root.zOrder=1;
+        Laya.Scene.open(fullName,false);
     }
     closeView(fName: string) {
         let fullName: string = fName + `.scene`;

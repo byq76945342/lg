@@ -27,15 +27,18 @@ export default class TMap extends Laya.TiledMap implements MapImp {
 
         this.initFinder();
 
-        Laya.stage.on(Laya.Event.CLICK, this, this.clickMap);
+        // Laya.stage.on(Laya.Event.CLICK, this, this.clickMap);
         Laya.stage.on(Laya.Event.RESIZE, this, this.resetViewReg);
         this.resetViewReg();
         this.moveViewPort(0, 0);
         MapMgr.ins.addToMap();
+        this.mapSprite().zOrder = 0;
+        this.mapSprite().name = "maproot";
+
     }
     private resetViewReg() {
         this.numColumnsTile * NodeUtil.GRIDSIZE
-        this.scale = Laya.stage.width / ( this.numColumnsTile * NodeUtil.GRIDSIZE);
+        this.scale = Laya.stage.height / (this.numRowsTile * NodeUtil.GRIDSIZE);
         this.changeViewPortBySize(Laya.stage.width, Laya.stage.height);
     }
     private initFinder() {

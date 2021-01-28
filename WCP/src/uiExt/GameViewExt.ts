@@ -9,6 +9,7 @@ export default class GameViewExt extends ui.GameViewUI {
         super();
         MapMgr.ins.addMap(`map/mainmap`);
         MapMgr.ins.addToMapList(this.hero);
+        this.zOrder = 1;
     }
 
 }

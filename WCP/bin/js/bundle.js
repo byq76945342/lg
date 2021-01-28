@@ -6,9 +6,7 @@
     var ui;
     (function (ui) {
         class BottomViewUI extends View {
-            constructor() {
-                super();
-            }
+            constructor() { super(); }
             createChildren() {
                 super.createChildren();
                 this.createView(BottomViewUI.uiView);
@@ -17,6 +15,15 @@
         BottomViewUI.uiView = { "type": "View", "props": { "y": 0, "width": 512, "runtime": "uiExt/BottomViewExt.ts", "height": 313, "centerY": 0, "centerX": 0 }, "compId": 2, "child": [{ "type": "Image", "props": { "y": 0, "x": 0, "skin": "comp/image.png" }, "compId": 12 }], "loadList": ["comp/image.png"], "loadList3D": [] };
         ui.BottomViewUI = BottomViewUI;
         REG("ui.BottomViewUI", BottomViewUI);
+        class ControlViewUI extends View {
+            constructor() { super(); }
+            createChildren() {
+                super.createChildren();
+                this.loadScene("ControlView");
+            }
+        }
+        ui.ControlViewUI = ControlViewUI;
+        REG("ui.ControlViewUI", ControlViewUI);
         class DimageViewUI extends View {
             constructor() { super(); }
             createChildren() {
@@ -50,7 +57,8 @@
         constructor() { }
         openView(fName) {
             let fullName = fName + `.scene`;
-            Laya.Scene.open(fullName);
+            Laya.Scene.root.zOrder = 1;
+            Laya.Scene.open(fullName, false);
         }
         closeView(fName) {
             let fullName = fName + `.scene`;
@@ -80,16 +88,65 @@
         constructor() {
             super();
             this.on(Laya.Event.CLICK, this, this.closeThis);
+            this.zOrder = 0;
         }
         closeThis() {
             UIMgr.ins.closeView(`LoadingView`);
+            UIMgr.ins.openView(`GameView`);
+            UIMgr.ins.openView(`ControlView`);
             UIMgr.ins.openView(`DimageView`);
+        }
+    }
+
+    class ControlViewExt extends ui.ControlViewUI {
+        constructor() {
+            super();
+            this.isTouch = false;
+            this.touchDir = new Laya.Point();
+            this.zOrder = 100;
+            let stage = this.imgTar.on(Laya.Event.MOUSE_DOWN, this, this.touckStr);
+        }
+        dragImage(e) {
+            let x;
+            let y;
+            if (!this.isTouch) {
+                this.imgTar.x = (this.imgCont.width - this.imgTar.width) >> 1;
+                this.imgTar.y = (this.imgCont.height - this.imgTar.height) >> 1;
+                return;
+            }
+            else {
+                x = e.stageX;
+                y = e.stageY;
+            }
+            let centerx = this.imgCont.x + (this.imgCont.width >> 1);
+            let centery = this.imgCont.y + (this.imgCont.height >> 1);
+            let dirx = x - centerx;
+            let diry = y - centery;
+            this.touchDir.setTo(dirx, diry);
+            this.touchDir.normalize();
+            this.imgTar.x = this.touchDir.x * 50 + (this.imgTar.width >> 1);
+            this.imgTar.y = this.touchDir.y * 50 + (this.imgTar.height >> 1);
+        }
+        touckStr() {
+            this.isTouch = true;
+            Laya.stage.on(Laya.Event.MOUSE_MOVE, this, this.dragImage);
+            Laya.stage.on(Laya.Event.MOUSE_UP, this, this.touckEnd);
+        }
+        touckEnd() {
+            Laya.stage.off(Laya.Event.MOUSE_MOVE, this, this.dragImage);
+            Laya.stage.off(Laya.Event.MOUSE_UP, this, this.touckEnd);
+            this.isTouch = false;
+            this.dragImage(null);
+        }
+        onAwake() {
+            console.log("secen call func onAwake");
         }
     }
 
     class DimageViewExt extends ui.DimageViewUI {
         constructor() {
             super();
+            this.zOrder = 0;
         }
     }
 
@@ -370,15 +427,16 @@
             this.touchLayer = this.getLayerByName("build");
             this.setViewPortPivotByScale(0, 0);
             this.initFinder();
-            Laya.stage.on(Laya.Event.CLICK, this, this.clickMap);
             Laya.stage.on(Laya.Event.RESIZE, this, this.resetViewReg);
             this.resetViewReg();
             this.moveViewPort(0, 0);
             MapMgr.ins.addToMap();
+            this.mapSprite().zOrder = 0;
+            this.mapSprite().name = "maproot";
         }
         resetViewReg() {
             this.numColumnsTile * NodeUtil.GRIDSIZE;
-            this.scale = Laya.stage.width / (this.numColumnsTile * NodeUtil.GRIDSIZE);
+            this.scale = Laya.stage.height / (this.numRowsTile * NodeUtil.GRIDSIZE);
             this.changeViewPortBySize(Laya.stage.width, Laya.stage.height);
         }
         initFinder() {
@@ -592,15 +650,16 @@
             this.hero = new HeroNode();
             MapMgr.ins.addMap(`map/mainmap`);
             MapMgr.ins.addToMapList(this.hero);
+            this.zOrder = 1;
         }
     }
 
     class GameConfig {
-        constructor() {
-        }
+        constructor() { }
         static init() {
             var reg = Laya.ClassUtils.regClass;
             reg("uiExt/BottomViewExt.ts", BottomViewExt);
+            reg("uiExt/ControlViewExt.ts", ControlViewExt);
             reg("uiExt/DimageViewExt.ts", DimageViewExt);
             reg("uiExt/GameViewExt.ts", GameViewExt);
         }
@@ -611,7 +670,7 @@
     GameConfig.screenMode = "horizontal";
     GameConfig.alignV = "middle";
     GameConfig.alignH = "center";
-    GameConfig.startScene = "DimageView.scene";
+    GameConfig.startScene = "ControlView.scene";
     GameConfig.sceneRoot = "";
     GameConfig.debug = false;
     GameConfig.stat = false;
